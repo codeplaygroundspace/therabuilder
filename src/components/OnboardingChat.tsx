@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import ChatActions from "./ChatActions";
+import { FLOW, CLOSING } from "@/lib/onboarding-flow";
 
 type Role = "bot" | "user";
 
@@ -10,31 +11,12 @@ type Message = {
   role: Role;
   /** Light lead-in lines shown above the question (bot only). */
   preamble?: string[];
+  /** Regular-weight lead-in shown inline before the bold question (bot only). */
+  lead?: string;
   text: string;
   /** Rendered in a muted style — used for skipped answers. */
   muted?: boolean;
 };
-
-/** The scripted onboarding flow for a therapist's website. */
-const FLOW: { question: string; preamble?: string[]; hint: string }[] = [
-  {
-    preamble: ["Hi,", "Let's get started with your site setup."],
-    question:
-      "First, what's your business name, and what type of therapy do you specialize in?",
-    hint: "Calm Harbor Therapy — I specialize in anxiety, trauma recovery, and couples counseling.",
-  },
-  {
-    question: "Do you see clients in person, online, or both — and where are you based?",
-    hint: "Both — online across the state, and in person in Austin, TX.",
-  },
-  {
-    question: "And how would you like new clients to reach you?",
-    hint: "A simple contact form plus a link to my online booking page.",
-  },
-];
-
-const CLOSING =
-  "Perfect — that's everything I need for now. I'll start putting your site together and you can refine it next.";
 
 let idCounter = 0;
 const nextId = () => ++idCounter;
@@ -72,10 +54,10 @@ export default function OnboardingChat() {
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [draft]);
 
-  const pushBot = (text: string) => {
+  const pushBot = (text: string, lead?: string) => {
     setIsTyping(true);
     window.setTimeout(() => {
-      setMessages((m) => [...m, { id: nextId(), role: "bot", text }]);
+      setMessages((m) => [...m, { id: nextId(), role: "bot", text, lead }]);
       setIsTyping(false);
     }, 700);
   };
@@ -84,7 +66,7 @@ export default function OnboardingChat() {
     const next = step + 1;
     setStep(next);
     if (next < FLOW.length) {
-      pushBot(FLOW[next].question);
+      pushBot(FLOW[next].question, FLOW[next].lead);
     } else {
       pushBot(CLOSING);
       setDone(true);
@@ -145,7 +127,12 @@ export default function OnboardingChat() {
           <div className="space-y-7">
             {messages.map((msg) =>
               msg.role === "bot" ? (
-                <BotMessage key={msg.id} preamble={msg.preamble} text={msg.text} />
+                <BotMessage
+                  key={msg.id}
+                  preamble={msg.preamble}
+                  lead={msg.lead}
+                  text={msg.text}
+                />
               ) : (
                 <UserMessage key={msg.id} text={msg.text} muted={msg.muted} />
               )
@@ -206,9 +193,11 @@ export default function OnboardingChat() {
 
 function BotMessage({
   preamble,
+  lead,
   text,
 }: {
   preamble?: string[];
+  lead?: string;
   text: string;
 }) {
   return (
@@ -220,7 +209,12 @@ function BotMessage({
             {line}
           </p>
         ))}
-        <p className="font-extrabold tracking-[-0.01em]">{text}</p>
+        <p className="font-extrabold tracking-[-0.01em]">
+          {lead && (
+            <span className="font-normal text-foreground/90">{lead} </span>
+          )}
+          {text}
+        </p>
       </div>
     </div>
   );

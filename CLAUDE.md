@@ -31,10 +31,12 @@ There is no test runner configured yet.
 - **App Router**, React Server Components by default. `src/app/page.tsx` renders the whole
   experience by mounting a single client component — the home page *is* the onboarding chat.
 - **Client-side scripted flow.** `src/components/OnboardingChat.tsx` is a `"use client"`
-  state machine: the conversation is driven by the `FLOW` array (question + preamble + hint
-  per step) plus a `step` index and message list. There is **no backend or LLM** — answers
-  advance a local script with a simulated typing delay. Adding/changing questions means
-  editing `FLOW`.
+  state machine driven by a `step` index and message list. There is **no backend or LLM** —
+  answers advance a local script with a simulated typing delay.
+- **Content is separate from logic.** The questions live in `src/lib/onboarding-flow.ts`
+  (the `FLOW` array: question + optional `preamble`/`lead` + `hint` per step, plus the
+  `CLOSING` message). Editing or reordering questions means changing that file only — never
+  the component.
 - **Component split.** Chat conversation lives in `OnboardingChat.tsx`; the quick-action
   buttons (Help me answer / Skip question / End chat & continue) are a separate presentational
   component, `src/components/ChatActions.tsx`, wired via callbacks (`onHelp`, `onSkip`, `onEnd`).
