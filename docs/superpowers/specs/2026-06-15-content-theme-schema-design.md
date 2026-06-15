@@ -101,21 +101,28 @@ Derived from the section types actually used across `sarah-demo`'s pages. Each v
 only the content fields it needs; structural craft (spacing, radii, line-heights) stays in the
 fixed template CSS, never in the schema.
 
+Optional fields are marked `?`. Several variants carry an optional `cta`/`button`
+(`{label, href}`) and `image`/`logos` (`{src, alt}`). Prose sections use `paragraphs[]` (one
+string per rendered `<p>`), not a single `body` string. This table reflects the shapes as
+implemented in `src/lib/site/sections.ts` (the schema is the authority if they ever diverge).
+
 | `type` | Source in template | Key fields |
 |--------|--------------------|-----------|
-| `hero` | Hero | `eyebrow`, `heading`, `body`, `cta {label, href}`, `image {src, alt}` |
+| `hero` | Hero | `eyebrow?`, `heading`, `body`, `cta?`, `image?` |
 | `logoStrip` | index logo-strip | `label`, `logos[] {src, alt}` |
-| `intro` | IntroSection | `label?`, `heading`, `body` |
+| `intro` | IntroSection | `label?`, `heading?`, `paragraphs[]`, `cta?` |
 | `infoCards` | InfoCardsSection | `label?`, `heading?`, `cards[] {title, body, icon?}` |
-| `about` | About (home) | `label`, `heading`, `body`, `image {src, alt}` |
+| `about` | About (home) | `label?`, `heading`, `paragraphs[]`, `image`, `cta?` |
 | `richText` | about-page prose, credentials | `label?`, `heading?`, `paragraphs[]`, `list?` |
-| `split` | therapy-split | `label`, `heading`, `paragraphs[]`, `image {src, alt}`, `imagePosition` |
-| `services` | Services | `heading?`, `items[] {title, copy, image, imageAlt}` |
+| `split` | therapy-split | `label?`, `heading`, `paragraphs[]`, `image`, `imagePosition`, `cta?` |
+| `services` | Services | `label?`, `heading?`, `body?`, `items[] {title, copy, image?, imageAlt?}` |
 | `accordion` | FAQs, therapy supportAreas | `label?`, `heading?`, `items[] {title, body}` |
-| `testimonial` | Testimonial | `quote`, `attribution`, optional (AI can't source real ones) |
-| `resourcesGrid` | resources/blog grid | `label?`, `heading`, `lead?`, `posts[] {slug, title, excerpt, image}` |
-| `contact` | Contact | `heading`, `intro?`, `methods[]` |
-| `cta` | CtaContact / CtaFaq | `variant` (`"contact"` or `"faq"`), `heading`, `body?`, `button {label, href}` |
+| `testimonial` | Testimonial | `quote`, `attribution?` (AI can't source real ones) |
+| `resourcesGrid` | resources/blog grid | `label?`, `heading`, `lead?`, `posts[] {slug, title, excerpt, image?}` |
+| `contact` | Contact | `label?`, `heading`, `intro?`, `methods?[]` |
+| `cta` | CtaContact / CtaFaq | `variant` (`"contact"` or `"faq"`), `label?`, `heading`, `body?`, `note?`, `button?` |
+
+(`cta.button` is optional because the FAQ CTA renders a contact form rather than a button.)
 
 The **page section list is where "bounded structure variation" (ADR-0001) lives**: the AI
 chooses which sections appear, in what order, and how many items each holds — but never invents
