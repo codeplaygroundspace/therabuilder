@@ -6,15 +6,11 @@
 > These are **not decided.** Do not assume an answer or build as if one were chosen. When one is
 > resolved, promote it to its own Accepted record and link it here.
 
-## AI provider
+## AI provider — RESOLVED
 
-Anthropic (Claude) vs Google (Gemini), or another.
-
-- Lean: **abstract the provider behind an interface** so it is swappable, and start with
-  whichever gives the best **structured / schema-constrained output** for filling the content
-  JSON ([0003](0003-content-json-source-of-truth.md)).
-- To size: token cost per generated site, latency, structured-output reliability.
-- **Decision needed before** building the generation step.
+**Resolved 2026-06-15 → [0008](0008-ai-provider-anthropic.md):** start with **Anthropic
+(Claude)** behind a provider-agnostic `StructuredLLM` interface so the provider stays swappable.
+See that record for the reasoning and what would flip the default.
 
 ## Database + auth
 
