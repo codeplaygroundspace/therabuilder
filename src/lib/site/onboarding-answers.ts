@@ -1,0 +1,49 @@
+/**
+ * The facts collected by the onboarding chat (`src/lib/onboarding-flow.ts`), shaped as a
+ * typed object. This is the AI generator's INPUT — everything the user actually told us,
+ * which the model must respect and must not contradict or fabricate around.
+ *
+ * Capturing these from the live chat is #9; the spike (#4) uses the `sampleAnswers` fixture.
+ */
+export type OnboardingAnswers = {
+  /** Q1 — business name + type of therapy. */
+  businessNameAndSpecialty: string;
+  /** Q2 — the practitioner's own name, as shown on the site. */
+  practitionerName: string;
+  /** Q3 — where they are based (or "online only"). */
+  location: string;
+  /** Q4 — in-person, online, or both. */
+  sessionFormat: string;
+  /** Q5 — who they most enjoy working with (ideal client). */
+  idealClient: string;
+  /** Q6 — what drew them to this work (seed for the bio). */
+  background: string;
+  /** Q7 — qualifications / accreditations (must not be invented by the AI). */
+  credentials: string;
+  /** Q8 — how new clients should reach them. */
+  contactPreference: string;
+  /** Q9 — how the site should feel (tone → theme + copy voice). */
+  tone: string;
+};
+
+/**
+ * A realistic sample, loosely modelled on the `sarah-demo` practitioner, used by the spike
+ * so it does not depend on the live chat (#9). Deliberately gives the AI only what a real
+ * onboarding would: no fees, no insurer names, no testimonials.
+ */
+export const sampleAnswers: OnboardingAnswers = {
+  businessNameAndSpecialty:
+    "Calm Harbor Therapy — I'm a CBT therapist specialising in anxiety, burnout and stress.",
+  practitionerName: "Dr. Maya Ellis",
+  location: "Brighton, and online across the UK.",
+  sessionFormat: "Both — in-person in Brighton and online video calls.",
+  idealClient:
+    "Overwhelmed professionals who look like they're coping but feel exhausted underneath.",
+  background:
+    "After years in a high-pressure NHS leadership role I burned out myself, which reshaped how I help others slow down and rebuild.",
+  credentials:
+    "BABCP-accredited CBT therapist, PG Dip in Cognitive Behavioural Therapy, HCPC registered.",
+  contactPreference:
+    "A simple contact form, plus my email and a link to my online booking page.",
+  tone: "Warm and reassuring, calm and grounded.",
+};
