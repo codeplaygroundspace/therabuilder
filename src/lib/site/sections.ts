@@ -5,7 +5,7 @@ const zLink = z.object({ label: z.string(), href: z.string() });
 
 export const zHeroSection = z.object({
   type: z.literal("hero"),
-  eyebrow: z.string(),
+  eyebrow: z.string().optional(),
   heading: z.string(),
   body: z.string(),
   cta: zLink.optional(),
@@ -21,8 +21,9 @@ export const zLogoStripSection = z.object({
 export const zIntroSection = z.object({
   type: z.literal("intro"),
   label: z.string().optional(),
-  heading: z.string(),
-  body: z.string(),
+  heading: z.string().optional(),
+  paragraphs: z.array(z.string()),
+  cta: zLink.optional(),
 });
 
 export const zInfoCardsSection = z.object({
@@ -36,10 +37,11 @@ export const zInfoCardsSection = z.object({
 
 export const zAboutSection = z.object({
   type: z.literal("about"),
-  label: z.string(),
+  label: z.string().optional(),
   heading: z.string(),
-  body: z.string(),
+  paragraphs: z.array(z.string()),
   image: zImage,
+  cta: zLink.optional(),
 });
 
 export const zRichTextSection = z.object({
@@ -52,16 +54,19 @@ export const zRichTextSection = z.object({
 
 export const zSplitSection = z.object({
   type: z.literal("split"),
-  label: z.string(),
+  label: z.string().optional(),
   heading: z.string(),
   paragraphs: z.array(z.string()),
   image: zImage,
   imagePosition: z.enum(["left", "right"]).default("right"),
+  cta: zLink.optional(),
 });
 
 export const zServicesSection = z.object({
   type: z.literal("services"),
+  label: z.string().optional(),
   heading: z.string().optional(),
+  body: z.string().optional(),
   items: z.array(
     z.object({
       title: z.string(),
@@ -102,6 +107,7 @@ export const zResourcesGridSection = z.object({
 
 export const zContactSection = z.object({
   type: z.literal("contact"),
+  label: z.string().optional(),
   heading: z.string(),
   intro: z.string().optional(),
   methods: z.array(z.string()).optional(),
@@ -110,9 +116,11 @@ export const zContactSection = z.object({
 export const zCtaSection = z.object({
   type: z.literal("cta"),
   variant: z.enum(["contact", "faq"]),
+  label: z.string().optional(),
   heading: z.string(),
   body: z.string().optional(),
-  button: zLink,
+  note: z.string().optional(),
+  button: zLink.optional(),
 });
 
 export const zSection = z.discriminatedUnion("type", [

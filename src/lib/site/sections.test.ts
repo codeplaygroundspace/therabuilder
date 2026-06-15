@@ -16,9 +16,9 @@ describe("zSection", () => {
     const samples: Record<string, unknown> = {
       hero: { type: "hero", eyebrow: "e", heading: "h", body: "b" },
       logoStrip: { type: "logoStrip", label: "l", logos: [] },
-      intro: { type: "intro", heading: "h", body: "b" },
+      intro: { type: "intro", paragraphs: ["p"] },
       infoCards: { type: "infoCards", cards: [] },
-      about: { type: "about", label: "l", heading: "h", body: "b", image: { src: "/a.jpg", alt: "a" } },
+      about: { type: "about", heading: "h", paragraphs: ["p"], image: { src: "/a.jpg", alt: "a" } },
       richText: { type: "richText", paragraphs: ["p"] },
       split: { type: "split", label: "l", heading: "h", paragraphs: ["p"], image: { src: "/a.jpg", alt: "a" } },
       services: { type: "services", items: [] },
