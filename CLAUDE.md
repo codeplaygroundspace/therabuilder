@@ -8,6 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > changes from earlier versions. Before writing framework code, read the relevant guide in
 > `node_modules/next/dist/docs/` rather than relying on memory of older Next.js APIs.
 
+## ⚠️ Read the decision records first
+
+**Before starting any work, read every file in [`docs/decisions/`](docs/decisions/).** These
+Architecture Decision Records capture *why* the product is built the way it is — the framework
+choice (all Next.js, not Astro), the JSON-source-of-truth model, the editor scope, and what is
+deliberately deferred. Several decisions reject the "obvious" approach for a specific reason.
+**Do not re-litigate or contradict a settled decision without flagging the conflict to the user.**
+Open questions (AI provider, DB/auth, hosting) are tracked in `docs/decisions/0007-open-questions.md`
+— don't assume answers to those.
+
 ## Project
 
 TheraBuilder is a guided website builder for therapists. The product's home page is a
