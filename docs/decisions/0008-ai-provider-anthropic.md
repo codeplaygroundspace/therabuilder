@@ -38,17 +38,21 @@ matches prose quality in a real bake-off, switch the default. Because everything
 
 ### The swappable boundary
 
-A minimal interface: given a system/user prompt and a target schema, return validated
-structured output. Vendor SDKs live **only** inside implementations of this interface.
+A minimal, Zod-agnostic interface: given a prompt and a JSON Schema, return the model's **raw
+(unvalidated) structured output**. Vendor SDKs live **only** inside implementations of this
+interface. Crucially, **validation and retry are the caller's concern**, not the provider's —
+the caller owns the Zod schema, validates the returned value, and re-requests on failure. This
+keeps adapters dumb and makes the validate/retry loop testable with a mock (no network).
 
 ```ts
 interface StructuredLLM {
-  generateStructured<T>(request: StructuredRequest<T>): Promise<T>;
+  // returns parsed-but-UNVALIDATED JSON; the caller validates against its Zod schema
+  generateStructured(request: StructuredRequest): Promise<unknown>;
 }
 ```
 
 Defined in `src/lib/ai/provider.ts`. The Anthropic-backed implementation and the site generator
-that consumes it are built in #4.
+that owns validation/retry are built in #4.
 
 ## Alternatives considered
 
