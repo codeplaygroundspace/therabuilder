@@ -28,7 +28,8 @@ rejected, and the consequences.
 | [0004](0004-editor-scope-mvp.md) | MVP editing scope: text + theme only | Accepted |
 | [0005](0005-template-as-design-source.md) | `sarah-demo` is the design source, ported to React | Accepted |
 | [0006](0006-build-not-rent-editor.md) | Build our own editor, don't rent a visual CMS | Accepted |
-| [0007](0007-open-questions.md) | Open questions (AI provider, DB/auth, hosting) | Open |
+| [0007](0007-open-questions.md) | Open questions (DB/auth, hosting) | Open |
+| [0008](0008-ai-provider-anthropic.md) | AI provider: Anthropic (Claude), swappable interface | Accepted |
 
 ## How to add a decision
 
