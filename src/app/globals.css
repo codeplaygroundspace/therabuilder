@@ -20,6 +20,17 @@
   --color-surface: var(--surface);
   --color-border: var(--border);
   --font-sans: var(--font-mulish), ui-sans-serif, system-ui, sans-serif;
+
+  /* rendered-site tokens (scoped values live under .site-root in site.css) */
+  --color-page-bg: var(--page-bg);
+  --color-surface-muted: var(--surface-muted);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent-dark: var(--accent-dark);
+  --color-warm: var(--warm);
+  --color-warm-text: var(--warm-text);
+  --font-display: var(--font-display-stack);
+  --font-body: var(--font-body-stack);
 }
 
 body {
