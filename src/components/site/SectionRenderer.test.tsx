@@ -31,6 +31,16 @@ describe("SectionRenderer", () => {
     expect(html).toContain("contact-cta");
   });
 
+  it("dispatches services to the Services component", () => {
+    const services: Extract<Section, { type: "services" }> = {
+      type: "services",
+      items: [{ title: "Anxiety", copy: "Slow the spiral." }],
+    };
+    const html = renderHtml(<SectionRenderer section={services} />);
+    expect(html).toContain("services-grid");
+    expect(html).toContain("Anxiety");
+  });
+
   it("renders an unported type without throwing, and never mis-dispatches (the #8 seam)", () => {
     let html = "";
     expect(() => {

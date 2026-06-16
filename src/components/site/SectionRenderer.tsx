@@ -32,6 +32,8 @@ function UnrenderedSection({ type }: { type: string }) {
 }
 
 export function SectionRenderer({ section }: { section: Section }) {
+  // Cast is sound: the lookup key is `section.type`, the same discriminant that
+  // narrows `section`, so the looked-up renderer always matches this `section`.
   const render = RENDERERS[section.type] as
     | ((s: Section) => ReactNode)
     | undefined;
