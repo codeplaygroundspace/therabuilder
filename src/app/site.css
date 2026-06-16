@@ -132,3 +132,94 @@
     padding: 0 1.25rem;
   }
 }
+
+/* ── Hero ── */
+.site-root .hero {
+  background: var(--surface);
+  padding: 5rem 0 6.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.site-root .hero .wrap {
+  position: relative;
+  z-index: 1;
+}
+.site-root .hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+}
+.site-root .hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.site-root .hero-h1 {
+  font-family: var(--font-display-stack);
+  font-size: var(--fs-hero);
+  line-height: var(--lh-hero);
+  color: var(--text);
+  font-weight: 400;
+  margin: 0;
+}
+.site-root .hero-sub {
+  font-size: var(--fs-lg);
+  color: var(--text-muted);
+  max-width: 44ch;
+  line-height: var(--lh-intro);
+}
+.site-root .hero-actions {
+  display: flex;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+.site-root .hero-portrait {
+  position: relative;
+  border-radius: var(--radius-arch-xl);
+  aspect-ratio: 4 / 5;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+.site-root .hero-portrait-img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  position: relative;
+  z-index: 1;
+}
+.site-root .hero-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.site-root .hero-bg-circle-left {
+  width: clamp(13.75rem, 28vw, 23.75rem);
+  aspect-ratio: 1;
+  left: max(-8.75rem, -8vw);
+  bottom: 2.75rem;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+.site-root .hero-bg-circle-right {
+  width: clamp(7.5rem, 28vw, 23.75rem);
+  aspect-ratio: 1;
+  right: 46%;
+  bottom: -18%;
+  background-color: var(--accent-soft);
+}
+@media (max-width: 48rem) {
+  .site-root .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  .site-root .hero-portrait {
+    max-height: 20rem;
+    border-radius: var(--radius-arch-md);
+  }
+  .site-root .hero {
+    padding: 3rem 0 4.5rem;
+  }
+}
