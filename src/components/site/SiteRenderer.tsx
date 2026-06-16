@@ -11,15 +11,18 @@ import { SectionRenderer } from "./SectionRenderer";
 export function SiteRenderer({
   document,
   slug,
+  homeHref,
 }: {
   document: SiteDocument;
   slug: string;
+  /** Where the brand/logo links. Defaults to "/" (published-site home). */
+  homeHref?: string;
 }) {
   const page = document.pages.find((p) => p.slug === slug) ?? document.pages[0];
 
   return (
     <SiteRoot>
-      <SiteHeader document={document} />
+      <SiteHeader document={document} homeHref={homeHref} />
       <main>
         {page.sections.map((section, i) => (
           <SectionRenderer key={i} section={section} />
