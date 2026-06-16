@@ -58,10 +58,13 @@ Two styling surfaces, per ADR-0009: the app chrome stays as-is; rendered sites a
 - `SiteRoot.tsx` — presentational wrapper: `<div className="site-root">{children}</div>`. (In #7
   it gains a `preset` prop; here it just applies the default.)
 - `HeroSection.tsx` — props: the `hero` section type. Renders eyebrow (optional), heading, body,
-  optional CTA button, optional portrait image + the decorative background circles.
+  optional CTA button, the portrait **placeholder** (arch frame, `aria-label` from `image.alt`),
+  and the decorative background circles.
 - `ServicesSection.tsx` — props: the `services` section type. Renders the header (label, heading,
-  body) and the responsive card grid; each card shows optional image, title, copy, and the arch
-  motif + hover underline-sweep.
+  body) and the responsive card grid; each card shows an image **placeholder**, title, copy, and
+  the arch motif + hover underline-sweep.
+- A shared `ImagePlaceholder.tsx` — a grey (`--surface-muted`) box with configurable shape
+  (aspect ratio / radius) and an `aria-label`; used by Hero (portrait) and Services (card image).
 - `CtaSection.tsx` — props: the `cta` section type; branches on `variant`:
   - `contact` → centered label / heading / body / note / button (port of `CtaContact`).
   - `faq` → two-column intro + a presentational `ContactFormFields` (port of `CtaFaq`); the form
@@ -77,11 +80,16 @@ them in `SiteRoot`. No fetching, no state.
 
 ## Images
 
-Section content images come from the schema (`src`/`alt` strings). Decision deferred to the plan:
-`next/image` vs `<img>` — to be settled by reading `node_modules/next/dist/docs/` (Next 16 image
-API) and checking the `eslint-config-next` `no-img-element` rule. Default lean: `next/image` if it
-imports cleanly with remote/static `src`; otherwise `<img>` with the rule scoped off for
-`src/components/site/`. Either way the component contract (takes `src`+`alt`) is unchanged.
+For MVP, image slots render as **styled grey placeholders — no real images**. The AI generates
+copy, not images (ADR-0010), and there is no image upload / stock-sourcing story yet, so shipping
+real `<img>`/`next/image` now would be premature.
+
+A placeholder is a box that occupies the image slot with the correct framing — aspect ratio, the
+arch border-radius, border, and soft shadow — filled with `--surface-muted` (the same neutral the
+portrait frame already uses). This preserves the layout exactly where a photo will later sit, and
+sidesteps the `next/image` vs `<img>` decision entirely. The schema keeps its `image` fields
+(`src`/`alt`); the components simply ignore `src` for now and use `alt` for the `aria-label`.
+Real-image support (upload or stock) is deferred to a later issue.
 
 ## Testing
 
@@ -92,7 +100,8 @@ for the visual check:
    existing node vitest env — no jsdom):
    - Hero renders the eyebrow when present and omits it when absent; renders heading + body; renders
      the CTA only when `cta` is set.
-   - Services renders one card per `items` entry (assert count) with each title/copy.
+   - Services renders one card per `items` entry (assert count) with each title/copy, each card
+     showing a placeholder (no `<img>` with a real `src`).
    - CTA `contact` renders the button + note; CTA `faq` renders the form fields and no button.
    - Requires broadening the vitest `include` to `src/**/*.test.{ts,tsx}`.
 2. **Visual check**: run the dev preview route and compare the three sections against the live
