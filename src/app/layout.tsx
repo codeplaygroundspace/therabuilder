@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Mulish, Fraunces, Work_Sans } from "next/font/google";
 import "./globals.css";
+// Plain scoped CSS for rendered therapist sites. Imported directly (not via @import in
+// globals.css) so it bypasses Tailwind's PostCSS @import resolver, which fails in Turbopack dev.
+import "./site.css";
 
 const mulish = Mulish({
   variable: "--font-mulish",
