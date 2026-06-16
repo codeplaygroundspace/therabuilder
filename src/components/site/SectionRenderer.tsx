@@ -3,6 +3,16 @@ import type { Section } from "@/lib/site/sections";
 import { HeroSection } from "./HeroSection";
 import { ServicesSection } from "./ServicesSection";
 import { CtaSection } from "./CtaSection";
+import { LogoStripSection } from "./LogoStripSection";
+import { IntroSection } from "./IntroSection";
+import { InfoCardsSection } from "./InfoCardsSection";
+import { AboutSection } from "./AboutSection";
+import { RichTextSection } from "./RichTextSection";
+import { SplitSection } from "./SplitSection";
+import { AccordionSection } from "./AccordionSection";
+import { TestimonialSection } from "./TestimonialSection";
+import { ResourcesGridSection } from "./ResourcesGridSection";
+import { ContactSection } from "./ContactSection";
 
 /**
  * Maps each section `type` to a renderer. Optional keys model "only some types are
@@ -17,6 +27,16 @@ const RENDERERS: {
   hero: (s) => <HeroSection section={s} />,
   services: (s) => <ServicesSection section={s} />,
   cta: (s) => <CtaSection section={s} />,
+  logoStrip: (s) => <LogoStripSection section={s} />,
+  intro: (s) => <IntroSection section={s} />,
+  infoCards: (s) => <InfoCardsSection section={s} />,
+  about: (s) => <AboutSection section={s} />,
+  richText: (s) => <RichTextSection section={s} />,
+  split: (s) => <SplitSection section={s} />,
+  accordion: (s) => <AccordionSection section={s} />,
+  testimonial: (s) => <TestimonialSection section={s} />,
+  resourcesGrid: (s) => <ResourcesGridSection section={s} />,
+  contact: (s) => <ContactSection section={s} />,
 };
 
 /** Dev-only marker so the preview surfaces gaps; never shown in production. */
