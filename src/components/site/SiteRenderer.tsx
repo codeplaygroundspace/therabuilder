@@ -21,7 +21,7 @@ export function SiteRenderer({
   const page = document.pages.find((p) => p.slug === slug) ?? document.pages[0];
 
   return (
-    <SiteRoot>
+    <SiteRoot theme={document.theme}>
       <SiteHeader document={document} homeHref={homeHref} />
       <main>
         {page.sections.map((section, i) => (

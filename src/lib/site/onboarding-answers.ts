@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * The facts collected by the onboarding chat (`src/lib/onboarding-flow.ts`), shaped as a
  * typed object. This is the AI generator's INPUT — everything the user actually told us,
@@ -25,6 +27,68 @@ export type OnboardingAnswers = {
   /** Q9 — how the site should feel (tone → theme + copy voice). */
   tone: string;
 };
+
+/**
+ * The OnboardingAnswers keys in the exact order the chat asks them (`FLOW` in
+ * `src/lib/onboarding-flow.ts`). The chat captures answers by step index and maps them back
+ * to fields through this array, so question order and field order stay in lockstep.
+ */
+export const ANSWER_KEYS: (keyof OnboardingAnswers)[] = [
+  "businessNameAndSpecialty",
+  "practitionerName",
+  "location",
+  "sessionFormat",
+  "idealClient",
+  "background",
+  "credentials",
+  "contactPreference",
+  "tone",
+];
+
+/** An OnboardingAnswers with every field blank — the starting point before the chat runs. */
+export function emptyAnswers(): OnboardingAnswers {
+  return {
+    businessNameAndSpecialty: "",
+    practitionerName: "",
+    location: "",
+    sessionFormat: "",
+    idealClient: "",
+    background: "",
+    credentials: "",
+    contactPreference: "",
+    tone: "",
+  };
+}
+
+/**
+ * Map answers captured by step index (the chat stores each reply at `steps[stepIndex]`) back
+ * to the named OnboardingAnswers fields via {@link ANSWER_KEYS}. Missing/skipped steps become
+ * "". Pure so the capture logic is testable without rendering the chat.
+ */
+export function answersFromSteps(steps: readonly string[]): OnboardingAnswers {
+  const answers = emptyAnswers();
+  ANSWER_KEYS.forEach((key, i) => {
+    answers[key] = steps[i]?.trim() ?? "";
+  });
+  return answers;
+}
+
+/**
+ * Runtime validation for the onboarding answers (e.g. the generation API request body).
+ * Every field is a non-empty string; the chat may submit "" for skipped questions, which the
+ * generator should still tolerate, so empty strings are allowed.
+ */
+export const zOnboardingAnswers = z.object({
+  businessNameAndSpecialty: z.string(),
+  practitionerName: z.string(),
+  location: z.string(),
+  sessionFormat: z.string(),
+  idealClient: z.string(),
+  background: z.string(),
+  credentials: z.string(),
+  contactPreference: z.string(),
+  tone: z.string(),
+}) satisfies z.ZodType<OnboardingAnswers>;
 
 /**
  * A realistic sample, loosely modelled on the `sarah-demo` practitioner, used by the spike
