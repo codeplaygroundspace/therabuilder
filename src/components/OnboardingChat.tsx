@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import ChatActions from "./ChatActions";
 import { FLOW, CLOSING } from "@/lib/onboarding-flow";
 import {
-  ANSWER_KEYS,
-  emptyAnswers,
+  answersFromSteps,
   type OnboardingAnswers,
 } from "@/lib/site/onboarding-answers";
 
@@ -55,11 +54,10 @@ export default function OnboardingChat({
   const finish = () => {
     if (completedRef.current) return;
     completedRef.current = true;
-    const answers = emptyAnswers();
-    ANSWER_KEYS.forEach((key, i) => {
-      answers[key] = answersRef.current[i]?.trim() ?? "";
-    });
-    onComplete?.(answers);
+    const answers = answersFromSteps(answersRef.current);
+    // Let the closing message render (700ms typing delay) before the parent swaps the chat
+    // out for the next step — also avoids a setState into an already-unmounted tree.
+    window.setTimeout(() => onComplete?.(answers), 1100);
   };
 
   // Keep the conversation pinned to the latest message.

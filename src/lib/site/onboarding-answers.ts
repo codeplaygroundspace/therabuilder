@@ -61,6 +61,19 @@ export function emptyAnswers(): OnboardingAnswers {
 }
 
 /**
+ * Map answers captured by step index (the chat stores each reply at `steps[stepIndex]`) back
+ * to the named OnboardingAnswers fields via {@link ANSWER_KEYS}. Missing/skipped steps become
+ * "". Pure so the capture logic is testable without rendering the chat.
+ */
+export function answersFromSteps(steps: readonly string[]): OnboardingAnswers {
+  const answers = emptyAnswers();
+  ANSWER_KEYS.forEach((key, i) => {
+    answers[key] = steps[i]?.trim() ?? "";
+  });
+  return answers;
+}
+
+/**
  * Runtime validation for the onboarding answers (e.g. the generation API request body).
  * Every field is a non-empty string; the chat may submit "" for skipped questions, which the
  * generator should still tolerate, so empty strings are allowed.
