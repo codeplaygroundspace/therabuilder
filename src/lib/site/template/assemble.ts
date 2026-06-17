@@ -1,6 +1,6 @@
 import type { SiteDocument, Page } from "../schema";
 import type { Section } from "../sections";
-import type { SiteContent } from "../content";
+import type { HomeContent, RestContent, SiteContent } from "../content";
 import type { OnboardingAnswers } from "../onboarding-answers";
 import { getPreset } from "../theme/presets";
 
@@ -8,179 +8,275 @@ import { getPreset } from "../theme/presets";
  * Merge AI-generated content slots onto the fixed MVP template to produce a complete,
  * schema-valid {@link SiteDocument} (ADR-0010). Pure and deterministic.
  *
+ * Generation is **home-first** (ADR-0011): {@link assembleHome} builds the chrome, the home
+ * page and the standard contact page, leaving about/therapy/faq present in the nav but empty;
+ * {@link buildRestPages} fills those three later, on request. {@link assembleSite} composes both
+ * for the one-shot/sample path, so the phased and one-shot outputs are identical by construction.
+ *
  * Division of responsibility:
- * - **Structure** (pages, section types, order, labels, nav, image placeholders) is fixed
- *   here — the one MVP template.
- * - **Copy** comes from `content` (the AI's only job).
- * - **Verbatim facts** (name, credentials, location, session format, contact details) are
- *   passed through from `answers` untouched — never routed through the model, so the hard
- *   rule "use them exactly as given" holds.
+ * - **Structure** (pages, section types, order, labels, nav, image placeholders) is fixed here.
+ * - **Copy** comes from the content payload (the AI's only job).
+ * - **Verbatim facts** (name, credentials, location, session format, contact details) are passed
+ *   through from `answers` untouched — never routed through the model.
  * - **Theme** is the user's chosen preset.
  *
  * The template deliberately OMITS sarah-demo's insurer logo strip, fee/insurance FAQs, and
  * blog/resources page: onboarding collects none of that, so carrying those slots would invite
  * fabrication (the prompt forbids invented fees, insurers and testimonials).
  */
+
+type AssembleOpts = { presetId?: string; templateId?: string };
+
+/** The AI-derived, page-spanning strings needed to build the about/therapy/faq pages later. */
+export type RestSeed = { siteName: string; specialty: string; tagline: string };
+
+/** The three pages deferred to phase 2 (present in the nav from phase 1, filled on request). */
+type RestSlug = "about" | "therapy" | "faq";
+
+/* ── Phase 1: chrome + home + contact, with the rest of the nav present but empty ─────── */
+
+/**
+ * Build the full site shell from phase-1 content: chrome (meta/practitioner/contact/nav/footer/
+ * theme), the home page, and the standard contact page. The about/therapy/faq pages exist in the
+ * nav so the menu and the home CTA work, but render a placeholder until {@link buildRestPages}
+ * fills them.
+ */
+export function assembleHome(
+  home: HomeContent,
+  answers: OnboardingAnswers,
+  opts: AssembleOpts = {},
+): SiteDocument {
+  const theme = getPreset(opts.presetId).theme;
+  const facts = deriveFacts(answers);
+  const seed: RestSeed = { siteName: home.siteName, specialty: home.specialty, tagline: home.tagline };
+
+  return {
+    ...buildChrome(home, facts, theme),
+    pages: [
+      buildHomePage(home, facts),
+      emptyPage("about", restPageMeta("about", seed, facts), "About"),
+      emptyPage("therapy", restPageMeta("therapy", seed, facts), home.specialty),
+      emptyPage("faq", restPageMeta("faq", seed, facts), "Frequently asked questions"),
+      buildContactPage(home, facts),
+    ],
+  };
+}
+
+/* ── Phase 2: the about / therapy / faq pages, generated only when the user asks ──────── */
+
+/**
+ * Build the three deferred pages from phase-2 content. Returns them in document order; the
+ * caller splices them into the live document by slug, so any edits to the home page survive.
+ */
+export function buildRestPages(
+  rest: RestContent,
+  answers: OnboardingAnswers,
+  seed: RestSeed,
+): Page[] {
+  const facts = deriveFacts(answers);
+  return [
+    buildAboutPage(rest, facts, seed),
+    buildTherapyPage(rest, facts, seed),
+    buildFaqPage(rest, facts, seed),
+  ];
+}
+
+/* ── One-shot: the complete site from full content (sample/demo/tests) ────────────────── */
+
 export function assembleSite(
   content: SiteContent,
   answers: OnboardingAnswers,
-  opts: { presetId?: string; templateId?: string } = {},
+  opts: AssembleOpts = {},
 ): SiteDocument {
-  const theme = getPreset(opts.presetId).theme;
-
-  const name = answers.practitionerName.trim();
-  const credentials = parseCredentials(answers.credentials);
-  const locations = parseLocations(answers.location);
-  const availability = answers.sessionFormat.trim();
-  const email = extractEmail(answers.contactPreference);
-  const phone = extractPhone(answers.contactPreference);
-  const bookingUrl = extractUrl(answers.contactPreference);
-  const ctaHref = bookingUrl ?? "/contact/";
-  const methods = deriveContactMethods(answers.contactPreference);
-
-  const { siteName, specialty, tagline } = content;
-  const locationLine = locations.join(" · ");
-
-  /** Standard "get in touch" CTA reused at the foot of several pages. */
-  const contactCta: Section = {
-    type: "cta",
-    variant: "contact",
-    label: "Get in touch",
-    heading: content.homeCtaHeading,
-    body: content.homeCtaBody,
-    ...(content.homeCtaNote ? { note: content.homeCtaNote } : {}),
-    button: { label: "Get in touch", href: ctaHref },
+  const shell = assembleHome(content, answers, opts);
+  const seed: RestSeed = {
+    siteName: content.siteName,
+    specialty: content.specialty,
+    tagline: content.tagline,
   };
+  const filled = new Map(buildRestPages(content, answers, seed).map((p) => [p.slug, p]));
+  return { ...shell, pages: shell.pages.map((p) => filled.get(p.slug) ?? p) };
+}
 
-  const home: Page = {
+/* ── Chrome ───────────────────────────────────────────────────────────────────────────── */
+
+function buildChrome(home: HomeContent, facts: Facts, theme: SiteDocument["theme"]) {
+  const { siteName, specialty, tagline } = home;
+  return {
+    schemaVersion: 1,
+    meta: {
+      siteName,
+      defaultTitle: `${siteName} — ${specialty}`,
+      defaultDescription: tagline,
+    },
+    practitioner: {
+      name: facts.name,
+      specialty,
+      title: specialty,
+      eyebrow: home.heroEyebrow,
+      heroSummary: home.heroBody,
+      bio: home.aboutParagraphs[0] ?? "",
+      credentials: facts.credentials,
+    },
+    contact: {
+      ...(facts.email ? { email: facts.email } : {}),
+      ...(facts.phone ? { phone: facts.phone } : {}),
+      ...(facts.bookingUrl ? { bookingUrl: facts.bookingUrl } : {}),
+      locations: facts.locations,
+      availability: facts.availability,
+    },
+    nav: [
+      { href: "/about/", label: "About" },
+      { href: "/therapy/", label: "Therapy" },
+      { href: "/faq/", label: "FAQ" },
+      { href: "/contact/", label: "Contact" },
+    ],
+    footer: {
+      tagline,
+      ...(facts.locationLine ? { location: facts.locationLine } : {}),
+      legalLinks: [],
+    },
+    theme,
+  } satisfies Omit<SiteDocument, "pages">;
+}
+
+/* ── Page builders ────────────────────────────────────────────────────────────────────── */
+
+function buildHomePage(home: HomeContent, facts: Facts): Page {
+  return {
     slug: "home",
-    seoTitle: `${siteName} — ${specialty}`,
-    seoDescription: tagline,
+    seoTitle: `${home.siteName} — ${home.specialty}`,
+    seoDescription: home.tagline,
     sections: [
       {
         type: "hero",
-        eyebrow: content.heroEyebrow,
-        heading: content.heroHeading,
-        body: content.heroBody,
-        cta: { label: "Get in touch", href: ctaHref },
-        image: { src: "", alt: `${name}, ${specialty}` },
+        eyebrow: home.heroEyebrow,
+        heading: home.heroHeading,
+        body: home.heroBody,
+        cta: { label: "Get in touch", href: facts.ctaHref },
+        image: { src: "", alt: `${facts.name}, ${home.specialty}` },
       },
       {
         type: "intro",
         label: "Welcome",
-        ...(content.introHeading ? { heading: content.introHeading } : {}),
-        paragraphs: content.introParagraphs,
+        ...(home.introHeading ? { heading: home.introHeading } : {}),
+        paragraphs: home.introParagraphs,
         cta: { label: "Explore therapy", href: "/therapy/" },
       },
-      {
-        type: "infoCards",
-        cards: content.infoCards,
-      },
+      { type: "infoCards", cards: home.infoCards },
       {
         type: "about",
-        label: `About ${name}`,
-        heading: content.aboutHeading,
-        paragraphs: content.aboutParagraphs,
-        image: { src: "", alt: `${name}, ${specialty}` },
+        label: `About ${facts.name}`,
+        heading: home.aboutHeading,
+        paragraphs: home.aboutParagraphs,
+        image: { src: "", alt: `${facts.name}, ${home.specialty}` },
         cta: { label: "Read more about me", href: "/about/" },
       },
-      {
-        type: "testimonial",
-        quote: content.testimonialQuote,
-        attribution: name,
-      },
-      contactCta,
+      { type: "testimonial", quote: home.testimonialQuote, attribution: facts.name },
+      homeContactCta(home, facts),
     ],
   };
+}
 
-  const aboutSections: Section[] = [
+function buildContactPage(home: HomeContent, facts: Facts): Page {
+  return {
+    slug: "contact",
+    seoTitle: `Contact ${facts.name} — ${home.siteName}`,
+    seoDescription: `Get in touch with ${facts.name} to ask about availability or book a first conversation.`,
+    sections: [
+      {
+        type: "contact",
+        label: "Contact",
+        heading: home.contactHeading,
+        intro: home.contactIntro,
+        methods: facts.methods,
+      },
+    ],
+  };
+}
+
+function buildAboutPage(rest: RestContent, facts: Facts, seed: RestSeed): Page {
+  const sections: Section[] = [
     {
       type: "richText",
-      label: `About ${name}`,
-      heading: content.bioHeading,
-      paragraphs: content.bioParagraphs,
+      label: `About ${facts.name}`,
+      heading: rest.bioHeading,
+      paragraphs: rest.bioParagraphs,
     },
   ];
-  if (credentials.length > 0) {
-    aboutSections.push({
+  if (facts.credentials.length > 0) {
+    sections.push({
       type: "richText",
       heading: "Qualifications and registrations",
       paragraphs: [],
-      list: credentials,
+      list: facts.credentials,
     });
   }
-  aboutSections.push({
+  sections.push({
     type: "richText",
-    ...(content.approachHeading ? { heading: content.approachHeading } : {}),
+    ...(rest.approachHeading ? { heading: rest.approachHeading } : {}),
     label: "How I work",
-    paragraphs: content.approachParagraphs,
+    paragraphs: rest.approachParagraphs,
   });
-  aboutSections.push(contactCta);
+  sections.push(subContactCta(facts));
 
-  const about: Page = {
-    slug: "about",
-    seoTitle: `About ${name} — ${siteName}`,
-    seoDescription: `Learn about ${name}, ${specialty}. ${tagline}`,
-    sections: aboutSections,
-  };
+  return { slug: "about", ...restPageMeta("about", seed, facts), sections };
+}
 
-  const therapy: Page = {
+function buildTherapyPage(rest: RestContent, facts: Facts, seed: RestSeed): Page {
+  return {
     slug: "therapy",
-    seoTitle: `${specialty} — ${siteName}`,
-    seoDescription: tagline,
+    ...restPageMeta("therapy", seed, facts),
     sections: [
       {
         type: "split",
         label: "Psychotherapy",
-        heading: content.therapyIntroHeading,
-        paragraphs: content.therapyIntroParagraphs,
+        heading: rest.therapyIntroHeading,
+        paragraphs: rest.therapyIntroParagraphs,
         image: { src: "", alt: "A calm, quiet space for reflection and conversation" },
         imagePosition: "right",
-        cta: { label: "Get in touch", href: ctaHref },
+        cta: { label: "Get in touch", href: facts.ctaHref },
       },
       {
         type: "split",
         label: "How it works",
-        heading: content.modalityHeading,
-        paragraphs: content.modalityParagraphs,
+        heading: rest.modalityHeading,
+        paragraphs: rest.modalityParagraphs,
         image: { src: "", alt: "Notes and quiet focus — the practical side of therapy" },
         imagePosition: "left",
       },
       {
         type: "accordion",
         label: "Areas of support",
-        heading: content.areasHeading,
-        items: content.areas.map((a) => ({ title: a.title, body: a.body })),
+        heading: rest.areasHeading,
+        items: rest.areas.map((a) => ({ title: a.title, body: a.body })),
       },
       {
         type: "services",
         label: "Approach and specialties",
-        heading: content.servicesHeading,
-        ...(content.servicesBody ? { body: content.servicesBody } : {}),
-        items: content.services.map((s) => ({
-          title: s.title,
-          copy: s.copy,
-          imageAlt: s.title,
-        })),
+        heading: rest.servicesHeading,
+        ...(rest.servicesBody ? { body: rest.servicesBody } : {}),
+        items: rest.services.map((s) => ({ title: s.title, copy: s.copy, imageAlt: s.title })),
       },
-      contactCta,
+      subContactCta(facts),
     ],
   };
+}
 
-  const faq: Page = {
+function buildFaqPage(rest: RestContent, facts: Facts, seed: RestSeed): Page {
+  return {
     slug: "faq",
-    seoTitle: `FAQ — ${siteName}`,
-    seoDescription: `Common questions about starting therapy with ${name}. ${tagline}`,
+    ...restPageMeta("faq", seed, facts),
     sections: [
       {
         type: "richText",
         label: "FAQ",
-        heading: content.faqHeading,
-        paragraphs: [content.faqIntro],
+        heading: rest.faqHeading,
+        paragraphs: [rest.faqIntro],
       },
       {
         type: "accordion",
-        items: content.faqs.map((f) => ({ title: f.question, body: f.answer })),
+        items: rest.faqs.map((f) => ({ title: f.question, body: f.answer })),
       },
       {
         type: "cta",
@@ -191,62 +287,109 @@ export function assembleSite(
       },
     ],
   };
+}
 
-  const contact: Page = {
-    slug: "contact",
-    seoTitle: `Contact ${name} — ${siteName}`,
-    seoDescription: `Get in touch with ${name} to ask about availability or book a first conversation.`,
+/** A page that exists in the nav but has no generated content yet (home-first phase 1). */
+function emptyPage(
+  slug: RestSlug,
+  meta: { seoTitle: string; seoDescription: string },
+  heading: string,
+): Page {
+  return {
+    slug,
+    ...meta,
     sections: [
       {
-        type: "contact",
-        label: "Contact",
-        heading: content.contactHeading,
-        intro: content.contactIntro,
-        methods,
+        type: "richText",
+        heading,
+        paragraphs: ["This page will be created when you build the rest of your site."],
       },
     ],
   };
+}
 
+/* ── Shared bits ──────────────────────────────────────────────────────────────────────── */
+
+/** The standard "get in touch" CTA from the home content, used on the home page. */
+function homeContactCta(home: HomeContent, facts: Facts): Section {
   return {
-    schemaVersion: 1,
-    meta: {
-      siteName,
-      defaultTitle: `${siteName} — ${specialty}`,
-      defaultDescription: tagline,
-    },
-    practitioner: {
-      name,
-      specialty,
-      title: specialty,
-      eyebrow: content.heroEyebrow,
-      heroSummary: content.heroBody,
-      bio: content.bioParagraphs[0] ?? content.aboutParagraphs[0] ?? "",
-      credentials,
-    },
-    contact: {
-      ...(email ? { email } : {}),
-      ...(phone ? { phone } : {}),
-      ...(bookingUrl ? { bookingUrl } : {}),
-      locations,
-      availability,
-    },
-    nav: [
-      { href: "/about/", label: "About" },
-      { href: "/therapy/", label: "Therapy" },
-      { href: "/faq/", label: "FAQ" },
-      { href: "/contact/", label: "Contact" },
-    ],
-    footer: {
-      tagline,
-      ...(locationLine ? { location: locationLine } : {}),
-      legalLinks: [],
-    },
-    theme,
-    pages: [home, about, therapy, faq, contact],
+    type: "cta",
+    variant: "contact",
+    label: "Get in touch",
+    heading: home.homeCtaHeading,
+    body: home.homeCtaBody,
+    ...(home.homeCtaNote ? { note: home.homeCtaNote } : {}),
+    button: { label: "Get in touch", href: facts.ctaHref },
   };
 }
 
-/* ── Deterministic parsers for the verbatim onboarding facts ──────────────────── */
+/**
+ * A deterministic CTA reused at the foot of the about/therapy pages. Independent of the home
+ * content so phase 2 needs no phase-1 copy — only the verbatim facts.
+ */
+function subContactCta(facts: Facts): Section {
+  return {
+    type: "cta",
+    variant: "contact",
+    label: "Get in touch",
+    heading: "Ready to take the first step?",
+    body: `Reach out to ${facts.name || "me"} to ask a question or arrange a first conversation.`,
+    button: { label: "Get in touch", href: facts.ctaHref },
+  };
+}
+
+function restPageMeta(
+  slug: RestSlug,
+  seed: RestSeed,
+  facts: Facts,
+): { seoTitle: string; seoDescription: string } {
+  switch (slug) {
+    case "about":
+      return {
+        seoTitle: `About ${facts.name} — ${seed.siteName}`,
+        seoDescription: `Learn about ${facts.name}, ${seed.specialty}. ${seed.tagline}`,
+      };
+    case "therapy":
+      return { seoTitle: `${seed.specialty} — ${seed.siteName}`, seoDescription: seed.tagline };
+    case "faq":
+      return {
+        seoTitle: `FAQ — ${seed.siteName}`,
+        seoDescription: `Common questions about starting therapy with ${facts.name}. ${seed.tagline}`,
+      };
+  }
+}
+
+/* ── Deterministic facts derived from the onboarding answers ──────────────────────────── */
+
+type Facts = {
+  name: string;
+  credentials: string[];
+  locations: string[];
+  locationLine: string;
+  availability: string;
+  email?: string;
+  phone?: string;
+  bookingUrl?: string;
+  ctaHref: string;
+  methods: string[];
+};
+
+function deriveFacts(answers: OnboardingAnswers): Facts {
+  const locations = parseLocations(answers.location);
+  const bookingUrl = extractUrl(answers.contactPreference);
+  return {
+    name: answers.practitionerName.trim(),
+    credentials: parseCredentials(answers.credentials),
+    locations,
+    locationLine: locations.join(" · "),
+    availability: answers.sessionFormat.trim(),
+    email: extractEmail(answers.contactPreference),
+    phone: extractPhone(answers.contactPreference),
+    bookingUrl,
+    ctaHref: bookingUrl ?? "/contact/",
+    methods: deriveContactMethods(answers.contactPreference),
+  };
+}
 
 /** Split a free-text credentials answer into a clean list (comma-separated). */
 function parseCredentials(raw: string): string[] {
