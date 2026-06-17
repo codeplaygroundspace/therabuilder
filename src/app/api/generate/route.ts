@@ -3,6 +3,7 @@ import { zOnboardingAnswers } from "@/lib/site/onboarding-answers";
 import { generateContent } from "@/lib/ai/generate-content";
 import { assembleSite } from "@/lib/site/template/assemble";
 import { AnthropicStructuredLLM } from "@/lib/ai/anthropic";
+import { enforceGenerateRateLimit, clientIp } from "@/lib/rate-limit";
 
 // The Anthropic SDK needs the Node.js runtime, and generation is per-request (never cached).
 export const runtime = "nodejs";
@@ -21,6 +22,15 @@ const zBody = z.object({
  * can offer the sample preview instead), and 502 if generation/validation fails.
  */
 export async function POST(request: Request) {
+  // Throttle first, before doing any work — bounds spend if the deploy is publicly reachable.
+  const limit = enforceGenerateRateLimit(clientIp(request));
+  if (!limit.ok) {
+    return Response.json(
+      { error: "Too many requests right now. Please wait a moment and try again." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
