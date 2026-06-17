@@ -78,7 +78,9 @@ export default function OnboardingExperience() {
   };
 
   if (stage === "preview" && site) {
-    return <GeneratedSitePreview site={site} onRestart={restart} />;
+    return (
+      <GeneratedSitePreview site={site} onRestart={restart} onChange={setSite} />
+    );
   }
 
   if (stage === "look") {
