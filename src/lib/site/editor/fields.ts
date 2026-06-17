@@ -1,4 +1,4 @@
-import type { SiteDocument, Page } from "../schema";
+import type { SiteDocument } from "../schema";
 import type { Section } from "../sections";
 import { getString, type Path } from "./update";
 
