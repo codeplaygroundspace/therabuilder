@@ -189,26 +189,24 @@ export default function OnboardingChat({
   };
 
   return (
-    <div className="relative min-h-dvh overflow-hidden">
+    <div className="relative h-dvh overflow-hidden">
       {/* Soft bottom glow — the calm atmosphere from the mockup. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[55vh] bg-[radial-gradient(120%_100%_at_50%_120%,var(--accent-soft)_0%,rgba(238,241,255,0.35)_38%,transparent_72%)]"
       />
 
-      <div className="relative z-10 lg:mx-auto lg:flex lg:max-w-6xl lg:gap-10 lg:px-6">
-        {/* Summary panel — sticky sidebar on desktop. */}
+      <div className="relative z-10 mx-auto flex h-full max-w-6xl lg:gap-10 lg:px-6">
+        {/* Summary panel — its own scrolling column on desktop. */}
         {hasSummary && (
-          <aside className="hidden lg:block lg:w-72 lg:shrink-0 lg:pt-24">
-            <div className="lg:sticky lg:top-24">
-              <ChatSummary rows={summaryRows} />
-            </div>
+          <aside className="hidden lg:block lg:w-72 lg:shrink-0 lg:overflow-y-auto lg:px-1 lg:pt-24 lg:pb-8">
+            <ChatSummary rows={summaryRows} />
           </aside>
         )}
 
         {/* Chat column */}
-        <main className="flex min-h-dvh flex-1 flex-col">
-          <div ref={scrollRef} className="scroll-soft flex-1 overflow-y-auto">
+        <main className="flex h-full min-h-0 flex-1 flex-col">
+          <div ref={scrollRef} className="scroll-soft min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-2xl px-5 pt-16 pb-8 sm:px-6 sm:pt-24">
               {/* Summary card on mobile (no room for a sidebar). */}
               {hasSummary && <ChatSummary rows={summaryRows} className="mb-8 lg:hidden" />}
