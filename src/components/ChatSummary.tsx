@@ -13,8 +13,9 @@ import type { SummaryRow } from "@/lib/site/chat-summary";
  * mounts and animates. The value's `startDelay` cascades by row index, so the initial batch
  * (after Q5) writes itself out line by line.
  */
-const TYPE_BASE_DELAY_MS = 260; // let the panel + label fade in before typing starts
-const TYPE_STAGGER_MS = 130; // cascade between rows
+const TYPE_BASE_DELAY_MS = 220; // let the panel + label fade in before typing starts
+const TYPE_STAGGER_MS = 110; // cascade between rows
+const TYPE_STAGGER_CAP = 4; // so later single rows (Q6–Q9) write promptly, not after a long wait
 const TYPE_CHAR_MS = 14;
 
 export function ChatSummary({
@@ -41,7 +42,10 @@ export function ChatSummary({
               {row.label}
             </dt>
             <dd className="mt-0.5 text-[13.5px] leading-snug text-foreground">
-              <Typewriter text={row.value} startDelay={TYPE_BASE_DELAY_MS + i * TYPE_STAGGER_MS} />
+              <Typewriter
+                text={row.value}
+                startDelay={TYPE_BASE_DELAY_MS + Math.min(i, TYPE_STAGGER_CAP) * TYPE_STAGGER_MS}
+              />
             </dd>
           </div>
         ))}
