@@ -11,6 +11,8 @@ export type FlowStep = {
   preamble?: string[];
   /** Regular-weight lead-in shown inline before the bold question. */
   lead?: string;
+  /** A muted example line shown under the question (e.g. "For example: …"). */
+  example?: string;
   /** Suggested answer used by the "Help me answer" action. */
   hint: string;
 };
@@ -54,12 +56,22 @@ export const FLOW: FlowStep[] = [
     hint: "A contact form, plus my email (hello@calmharbor.co.uk) and a link to my online booking page.",
   },
   {
-    lead: "Last one.",
     question: "How would you like your site to feel?",
+    example: "For example: professional, modern, calm, approachable…",
     hint: "Warm and reassuring; calm and grounded.",
   },
 ];
 
-/** Shown once every question has been answered or the chat is ended early. */
+/**
+ * The final chat step (ADR-0010): the look/theme picker, asked inline like any other
+ * question rather than on a separate screen. The swatches render in place of the text input.
+ */
+export const LOOK_PROMPT = {
+  lead: "Last one.",
+  question: "Now pick a look for your site.",
+  example: "You can change the colours later — we'll write all the words for you.",
+} as const;
+
+/** Shown once a look is chosen (or the chat is ended early), just before generating. */
 export const CLOSING =
-  "Perfect — that's everything I need for now. I'll start putting your site together and you can refine it next.";
+  "Perfect — that's everything I need. When you're ready, I'll put your home page together.";
