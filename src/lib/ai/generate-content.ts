@@ -1,49 +1,108 @@
 import { z } from "zod";
-import { zSiteContent, type SiteContent } from "../site/content";
+import {
+  zSiteContent,
+  zHomeContent,
+  zRestContent,
+  type SiteContent,
+  type HomeContent,
+  type RestContent,
+} from "../site/content";
 import type { OnboardingAnswers } from "../site/onboarding-answers";
+import type { RestSeed } from "../site/template/assemble";
 import { buildContentPrompt } from "./content-prompt";
 import type { StructuredLLM } from "./provider";
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 
 /**
- * Generate the per-therapist content slots (ADR-0010) using any StructuredLLM, then validate
- * against `zSiteContent`, retrying with the validation error fed back until it conforms.
+ * Generate per-therapist content slots (ADR-0010/0011) with any StructuredLLM, validating
+ * against the given Zod schema and retrying with the validation error fed back until it
+ * conforms. Provider-agnostic (ADR-0008): depends only on the StructuredLLM interface.
  *
- * Mirrors `generateSite` but targets the small flat content payload rather than a whole
- * SiteDocument — far cheaper, fewer retries. Provider-agnostic (ADR-0008): depends only on
- * the StructuredLLM interface. `assembleSite` turns the result into a SiteDocument.
+ * Phased (ADR-0011): {@link generateHomeContent} writes home + contact up front;
+ * {@link generateRestContent} writes about/therapy/faq later, on request, seeded with the
+ * already-decided site name/specialty/tagline. {@link generateContent} is the one-shot path.
  */
-export async function generateContent(
-  answers: OnboardingAnswers,
+async function generateValidated<T>(
+  schema: z.ZodType<T>,
+  base: { system: string; prompt: string },
+  schemaName: string,
+  schemaDescription: string,
   llm: StructuredLLM,
-  opts: { maxAttempts?: number } = {},
-): Promise<SiteContent> {
-  const maxAttempts = opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
-  const { system, prompt } = buildContentPrompt(answers);
-  const jsonSchema = z.toJSONSchema(zSiteContent) as Record<string, unknown>;
+  maxAttempts: number,
+): Promise<T> {
+  const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
 
   let lastErrorText = "";
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const attemptPrompt = lastErrorText
-      ? `${prompt}\n\nYour previous attempt did not conform to the schema:\n${lastErrorText}\n\nReturn corrected JSON.`
-      : prompt;
+    const prompt = lastErrorText
+      ? `${base.prompt}\n\nYour previous attempt did not conform to the schema:\n${lastErrorText}\n\nReturn corrected JSON.`
+      : base.prompt;
 
     const raw = await llm.generateStructured({
-      system,
-      prompt: attemptPrompt,
+      system: base.system,
+      prompt,
       jsonSchema,
-      schemaName: "site_content",
-      schemaDescription: "The per-therapist website copy slots.",
+      schemaName,
+      schemaDescription,
     });
 
-    const parsed = zSiteContent.safeParse(raw);
+    const parsed = schema.safeParse(raw);
     if (parsed.success) return parsed.data;
     lastErrorText = formatIssues(parsed.error);
   }
 
   throw new Error(
-    `Could not generate valid site content after ${maxAttempts} attempt(s). Last validation error:\n${lastErrorText}`,
+    `Could not generate valid ${schemaName} after ${maxAttempts} attempt(s). Last validation error:\n${lastErrorText}`,
+  );
+}
+
+/** Phase 1: the home + contact copy (and extracted siteName/specialty/tagline). */
+export function generateHomeContent(
+  answers: OnboardingAnswers,
+  llm: StructuredLLM,
+  opts: { maxAttempts?: number } = {},
+): Promise<HomeContent> {
+  return generateValidated(
+    zHomeContent,
+    buildContentPrompt(answers, "home"),
+    "home_content",
+    "The home + contact page copy for the therapist's site.",
+    llm,
+    opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+  );
+}
+
+/** Phase 2: the about/therapy/faq copy, seeded with the decided site name/specialty/tagline. */
+export function generateRestContent(
+  answers: OnboardingAnswers,
+  seed: RestSeed,
+  llm: StructuredLLM,
+  opts: { maxAttempts?: number } = {},
+): Promise<RestContent> {
+  return generateValidated(
+    zRestContent,
+    buildContentPrompt(answers, "rest", seed),
+    "rest_content",
+    "The about, therapy and FAQ page copy for the therapist's site.",
+    llm,
+    opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+  );
+}
+
+/** One-shot: the complete content payload (sample/demo path). */
+export function generateContent(
+  answers: OnboardingAnswers,
+  llm: StructuredLLM,
+  opts: { maxAttempts?: number } = {},
+): Promise<SiteContent> {
+  return generateValidated(
+    zSiteContent,
+    buildContentPrompt(answers, "full"),
+    "site_content",
+    "The per-therapist website copy slots.",
+    llm,
+    opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
   );
 }
 
