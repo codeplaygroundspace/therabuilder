@@ -29,6 +29,38 @@ export type OnboardingAnswers = {
 };
 
 /**
+ * The OnboardingAnswers keys in the exact order the chat asks them (`FLOW` in
+ * `src/lib/onboarding-flow.ts`). The chat captures answers by step index and maps them back
+ * to fields through this array, so question order and field order stay in lockstep.
+ */
+export const ANSWER_KEYS: (keyof OnboardingAnswers)[] = [
+  "businessNameAndSpecialty",
+  "practitionerName",
+  "location",
+  "sessionFormat",
+  "idealClient",
+  "background",
+  "credentials",
+  "contactPreference",
+  "tone",
+];
+
+/** An OnboardingAnswers with every field blank — the starting point before the chat runs. */
+export function emptyAnswers(): OnboardingAnswers {
+  return {
+    businessNameAndSpecialty: "",
+    practitionerName: "",
+    location: "",
+    sessionFormat: "",
+    idealClient: "",
+    background: "",
+    credentials: "",
+    contactPreference: "",
+    tone: "",
+  };
+}
+
+/**
  * Runtime validation for the onboarding answers (e.g. the generation API request body).
  * Every field is a non-empty string; the chat may submit "" for skipped questions, which the
  * generator should still tolerate, so empty strings are allowed.

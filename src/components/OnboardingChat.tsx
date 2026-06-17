@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import ChatActions from "./ChatActions";
 import { FLOW, CLOSING } from "@/lib/onboarding-flow";
+import {
+  ANSWER_KEYS,
+  emptyAnswers,
+  type OnboardingAnswers,
+} from "@/lib/site/onboarding-answers";
 
 type Role = "bot" | "user";
 
@@ -21,7 +26,12 @@ type Message = {
 let idCounter = 0;
 const nextId = () => ++idCounter;
 
-export default function OnboardingChat() {
+export default function OnboardingChat({
+  onComplete,
+}: {
+  /** Called once when the chat finishes (all questions answered or ended early). */
+  onComplete?: (answers: OnboardingAnswers) => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: nextId(),
@@ -37,6 +47,20 @@ export default function OnboardingChat() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Answers captured by step index; mapped back to fields via ANSWER_KEYS on completion.
+  const answersRef = useRef<string[]>([]);
+  const completedRef = useRef(false);
+
+  const finish = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    const answers = emptyAnswers();
+    ANSWER_KEYS.forEach((key, i) => {
+      answers[key] = answersRef.current[i]?.trim() ?? "";
+    });
+    onComplete?.(answers);
+  };
 
   // Keep the conversation pinned to the latest message.
   useEffect(() => {
@@ -70,12 +94,14 @@ export default function OnboardingChat() {
     } else {
       pushBot(CLOSING);
       setDone(true);
+      finish();
     }
   };
 
   const send = () => {
     const value = draft.trim();
     if (!value || isTyping || done) return;
+    answersRef.current[step] = value;
     setMessages((m) => [...m, { id: nextId(), role: "user", text: value }]);
     setDraft("");
     advance();
@@ -83,6 +109,7 @@ export default function OnboardingChat() {
 
   const handleSkip = () => {
     if (isTyping || done) return;
+    answersRef.current[step] = "";
     setMessages((m) => [
       ...m,
       { id: nextId(), role: "user", text: "Skipped", muted: true },
@@ -101,6 +128,7 @@ export default function OnboardingChat() {
     setDone(true);
     setStep(FLOW.length);
     pushBot(CLOSING);
+    finish();
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
