@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * The facts collected by the onboarding chat (`src/lib/onboarding-flow.ts`), shaped as a
  * typed object. This is the AI generator's INPUT — everything the user actually told us,
@@ -25,6 +27,23 @@ export type OnboardingAnswers = {
   /** Q9 — how the site should feel (tone → theme + copy voice). */
   tone: string;
 };
+
+/**
+ * Runtime validation for the onboarding answers (e.g. the generation API request body).
+ * Every field is a non-empty string; the chat may submit "" for skipped questions, which the
+ * generator should still tolerate, so empty strings are allowed.
+ */
+export const zOnboardingAnswers = z.object({
+  businessNameAndSpecialty: z.string(),
+  practitionerName: z.string(),
+  location: z.string(),
+  sessionFormat: z.string(),
+  idealClient: z.string(),
+  background: z.string(),
+  credentials: z.string(),
+  contactPreference: z.string(),
+  tone: z.string(),
+}) satisfies z.ZodType<OnboardingAnswers>;
 
 /**
  * A realistic sample, loosely modelled on the `sarah-demo` practitioner, used by the spike
