@@ -24,10 +24,17 @@ export function GeneratedSitePreview({
   site,
   onRestart,
   onChange,
+  onBuildRest,
+  buildingRest = false,
+  restError = null,
 }: {
   site: SiteDocument;
   onRestart: () => void;
   onChange?: (next: SiteDocument) => void;
+  /** When given, the other pages aren't built yet — offer to generate them (ADR-0011). */
+  onBuildRest?: () => void;
+  buildingRest?: boolean;
+  restError?: string | null;
 }) {
   const [slug, setSlug] = useState("home");
   const [editing, setEditing] = useState(false);
@@ -54,6 +61,19 @@ export function GeneratedSitePreview({
           {editing ? "Editing" : "Preview"} — {site.meta.siteName}
         </div>
         <div className="flex items-center gap-2">
+          {restError && (
+            <span className="hidden text-sm text-red-600 sm:inline">{restError}</span>
+          )}
+          {onBuildRest && (
+            <button
+              type="button"
+              onClick={onBuildRest}
+              disabled={buildingRest}
+              className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition enabled:hover:bg-accent/90 enabled:active:scale-95 disabled:opacity-60"
+            >
+              {buildingRest ? "Building the rest…" : "Build the rest of my site"}
+            </button>
+          )}
           {onChange && (
             <button
               type="button"
