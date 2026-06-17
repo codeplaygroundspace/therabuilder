@@ -32,6 +32,7 @@ rejected, and the consequences.
 | [0008](0008-ai-provider-anthropic.md) | AI provider: Anthropic (Claude), swappable interface | Accepted |
 | [0009](0009-rendered-site-styling-tailwind-tokens.md) | Rendered-site styling: tokenized Tailwind, presets & templates | Accepted |
 | [0010](0010-mvp-generation-skeleton-and-curated-look.md) | MVP generation: fixed skeleton, AI fills content, curated look | Accepted |
+| [0011](0011-home-first-phased-generation.md) | Home-first, phased generation (home now, rest on request) | Accepted |
 
 ## How to add a decision
 

@@ -17,7 +17,13 @@ const zArea = z.object({ title: z.string(), body: z.string() });
 const zService = z.object({ title: z.string(), copy: z.string() });
 const zFaq = z.object({ question: z.string(), answer: z.string() });
 
-export const zSiteContent = z.object({
+/**
+ * Phase-1 content (ADR-0011): everything needed to build the **home page** plus the standard
+ * **contact page**. This is all the AI generates up front — the home-first slice the user can
+ * judge before paying to generate the rest. Contact copy lives here (not phase 2) so the home
+ * page's primary "Get in touch" CTA resolves to a real page immediately.
+ */
+export const zHomeContent = z.object({
   // ── Extracted facts (the only place AI touches "facts" — a compound field) ──
   /** Practice / business name, e.g. "Calm Harbor Therapy". */
   siteName: z.string(),
@@ -43,6 +49,16 @@ export const zSiteContent = z.object({
   homeCtaBody: z.string(),
   homeCtaNote: z.string().optional(),
 
+  // ── Contact page (standard/generic — built in phase 1) ──
+  contactHeading: z.string(),
+  contactIntro: z.string(),
+});
+
+/**
+ * Phase-2 content (ADR-0011): the **about, therapy and FAQ** pages, generated only when the
+ * user is happy with the home page and asks to build the rest.
+ */
+export const zRestContent = z.object({
   // ── About page ──
   bioHeading: z.string(),
   /** The personal narrative, grounded in what drew them to the work. */
@@ -65,12 +81,19 @@ export const zSiteContent = z.object({
   faqHeading: z.string(),
   faqIntro: z.string(),
   faqs: z.array(zFaq).min(4).max(8),
-
-  // ── Contact page ──
-  contactHeading: z.string(),
-  contactIntro: z.string(),
 });
 
+/**
+ * The complete content payload, composed from the two phases so the full set is partitioned by
+ * construction (home ∪ rest = full, no overlap). The one-shot/sample path still uses this.
+ */
+export const zSiteContent = z.object({
+  ...zHomeContent.shape,
+  ...zRestContent.shape,
+});
+
+export type HomeContent = z.infer<typeof zHomeContent>;
+export type RestContent = z.infer<typeof zRestContent>;
 export type SiteContent = z.infer<typeof zSiteContent>;
 
 /**
