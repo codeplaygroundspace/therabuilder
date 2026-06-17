@@ -4,8 +4,11 @@ import type { StructuredLLM, StructuredRequest } from "./provider";
 /**
  * Default model. Configurable via the `model` option or the ANTHROPIC_MODEL env var.
  * Confirm the exact model string on the first real run.
+ *
+ * Haiku is the cheapest tier — chosen to keep per-generation cost low. If copy quality
+ * suffers, bump to `claude-sonnet-4-6` (balanced) or `claude-opus-4-8` (highest) via the env var.
  */
-const DEFAULT_MODEL = "claude-sonnet-4-6";
+const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 const DEFAULT_MAX_TOKENS = 16_000;
 
 /**
