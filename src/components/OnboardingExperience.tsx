@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import OnboardingChat from "./OnboardingChat";
-import { LookPicker } from "./LookPicker";
 import { GeneratedSitePreview } from "./GeneratedSitePreview";
 import { assembleSite } from "@/lib/site/template/assemble";
 import { sampleContent } from "@/lib/site/content";
 import { sampleAnswers, type OnboardingAnswers } from "@/lib/site/onboarding-answers";
 import type { SiteDocument, Page } from "@/lib/site/schema";
 
-type Stage = "chat" | "look" | "preview";
+type Stage = "chat" | "preview";
 
 /**
- * The MVP loop (#9): onboarding chat → pick a look → generate → see the rendered site.
+ * The MVP loop (#9): onboarding chat (questions + pick a look) → generate → see the site.
  *
+ * The look picker is the chat's final step, so generation is kicked off from inside the chat.
  * Generation is home-first (ADR-0011): the first call builds just the home (+ contact) page so
  * the user can judge it before paying for the rest; "Build the rest" generates about/therapy/faq
  * on request. When AI is unavailable (no API key) the sample fixture renders a complete site.
@@ -31,20 +31,15 @@ export default function OnboardingExperience() {
   const [buildingRest, setBuildingRest] = useState(false);
   const [restError, setRestError] = useState<string | null>(null);
 
-  const handleComplete = (a: OnboardingAnswers) => {
+  const generate = async (a: OnboardingAnswers, presetId: string) => {
     setAnswers(a);
-    setStage("look");
-  };
-
-  const generate = async (presetId: string) => {
-    if (!answers) return;
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ scope: "home", answers, presetId }),
+        body: JSON.stringify({ scope: "home", answers: a, presetId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -108,7 +103,9 @@ export default function OnboardingExperience() {
 
   // Render a sample site from the bundled fixture (no API key needed). Uses the fixture's
   // own answers so the demo copy and facts stay coherent; the sample is already complete.
-  const showSample = (presetId: string) => {
+  // The user's real answers are ignored here on purpose — the fixture is self-contained.
+  const showSample = (_answers: OnboardingAnswers, presetId: string) => {
+    setAnswers(sampleAnswers);
     setSite(assembleSite(sampleContent, sampleAnswers, { presetId }));
     setRestBuilt(true);
     setError(null);
@@ -139,16 +136,13 @@ export default function OnboardingExperience() {
     );
   }
 
-  if (stage === "look") {
-    return (
-      <LookPicker
-        onGenerate={generate}
-        onSample={showSample}
-        busy={busy}
-        error={error}
-      />
-    );
-  }
-
-  return <OnboardingChat key={runId} onComplete={handleComplete} />;
+  return (
+    <OnboardingChat
+      key={runId}
+      onGenerate={generate}
+      onSample={showSample}
+      busy={busy}
+      error={error}
+    />
+  );
 }
